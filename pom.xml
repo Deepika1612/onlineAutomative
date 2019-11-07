@@ -1,0 +1,509 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.mab.test</groupId>
+	<artifactId>onlineAutomation</artifactId>
+	<version>1.0-SNAPSHOT</version>
+
+	<!-- Test Profiles, define URL for AUT, Browser and Test Suites -->
+
+	<profiles>
+		<!-- Development environment @ my local machine -->
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<profile.path>/profiles/jenkins/config.properties</profile.path>
+				<testToRun>**/ScriptGenerator.class</testToRun>
+			</properties>
+		</profile>
+
+		<!-- Single Test -->
+		<profile>
+			<id>single</id>
+			<properties>
+				<profile.path>/profiles/single/config.properties</profile.path>
+				<testToRun>**/*SingleSuite.class</testToRun>
+			</properties>
+		</profile>
+
+		<!-- Single Test -->
+		<profile>
+			<id>dailybuild</id>
+			<properties>
+				<profile.path>/profiles/dailybuild/config.properties</profile.path>
+				<testToRun>${testToRun}</testToRun>
+			</properties>
+		</profile>
+
+		<!-- Jenkins environment @ deploy server normally configured on linux -->
+		<profile>
+			<id>jenkins</id>
+			<properties>
+				<profile.path>/profiles/jenkins/config.properties</profile.path>
+				<testToRun>${testToRun}</testToRun>
+			</properties>
+		</profile>
+	</profiles>
+
+
+	<properties>
+		<cucumber.version>1.2.2</cucumber.version>
+		<selenium.version>3.141.59</selenium.version>
+		<junit.version>4.12</junit.version>
+		<phantomjs.version>1.2.1</phantomjs.version>
+		<slf4jVersion>1.7.7</slf4jVersion>
+		<cucumber-jvm-deps>1.0.3</cucumber-jvm-deps>
+		<picocontainer>2.15</picocontainer>
+		<rest-assured>2.4.1</rest-assured>
+		<commons-io>1.3.2</commons-io>
+		<commons-lang>3.4</commons-lang>
+		<lombok>1.16.4</lombok>
+		<hamcrest-all>1.3</hamcrest-all>
+		<assertj-assert>3.0.0</assertj-assert>
+		<appium-java-client>7.0.0</appium-java-client>
+		<common-db-utils>1.6</common-db-utils>
+		<maven-surefire-plugin>2.21.0</maven-surefire-plugin>
+		<mojo-exec-maven-plugin>1.2.1</mojo-exec-maven-plugin>
+		<maven-resource-plugin>2.7</maven-resource-plugin>
+		<maven-compiler-plugin>2.5.1</maven-compiler-plugin>
+		<testng>6.8.21</testng>
+		<utf-8>UTF-8</utf-8>
+		<joda-time>2.5</joda-time>
+		<java-version>1.8</java-version>
+		<mysql>5.1.6</mysql>
+		<findbugs.skip>false</findbugs.skip>
+		<oracle.version>10.2.0.4.0</oracle.version>
+		<db2.version>10.1</db2.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin}</version>
+				<configuration>
+					<encoding>${utf-8}</encoding>
+					<source>${java-version}</source>
+					<target>${java-version}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.github.temyers</groupId>
+				<artifactId>cucumber-jvm-parallel-plugin</artifactId>
+				<version>4.2.0</version>
+				<executions>
+					<execution>
+						<id>generateRunners</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>generateRunners</goal>
+						</goals>
+						<configuration>
+							<glue>com.mab.test</glue>
+							<outputDirectory>${project.build.directory}/generated-test-sources/cucumber</outputDirectory>
+							<featuresDirectory>src/test/resources/features/Harvester</featuresDirectory>
+							<cucumberOutputDir>target/cucumber-parallel</cucumberOutputDir>
+							<parallelScheme>SCENARIO</parallelScheme>
+							<packageName>com.tests</packageName>
+							<tags>
+							<tag>@Smoke</tag>
+							</tags>
+							<useTestNG>false</useTestNG>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven-surefire-plugin}</version>
+				<executions>
+					<execution>
+						<id>test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<threadCount>1</threadCount>
+							<perCoreThreadCount>true</perCoreThreadCount>
+							<forkMode>never</forkMode>
+							<reuseForks>false</reuseForks>
+							<argLine>-Duser.language=en</argLine>
+							<argLine>-Xmx1024m</argLine>
+							<argLine>-XX:MaxPermSize=256m</argLine>
+							<argLine>-Dfile.encoding=UTF-8</argLine>
+							<useFile>false</useFile>
+							<skip>true</skip>
+							 <includes>
+								<include>${testToRun}</include>
+							</includes>
+							<testFailureIgnore>true</testFailureIgnore>
+
+							<systemPropertyVariables>
+								<scenario>Harvester_Search</scenario>
+							</systemPropertyVariables>
+							</configuration>
+				</execution>
+                </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${mojo-exec-maven-plugin}</version>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>com.mab.test.ReportMerger</mainClass>
+                            <classpathScope>test</classpathScope>
+                            <arguments>
+                                <argument>target/cucumber-report/cucumber-html-reports</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>${maven-resource-plugin}</version>
+                        <configuration>
+                            <!-- specify UTF-8, ISO-8859-1 or any other file encoding -->
+					<encoding>${utf-8}</encoding>
+					<resources>
+						<resource>
+							<filtering>true</filtering>
+							<directory>src/main/resources</directory>
+						</resource>
+					</resources>
+				</configuration>
+			</plugin>
+
+
+			<plugin>
+				<groupId>net.masterthought</groupId>
+				<artifactId>maven-cucumber-reporting</artifactId>
+				<version>0.0.8</version>
+				<executions>
+					<execution>
+						<id>execution</id>
+						<phase>test</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<projectName>mabcucumbertesting</projectName>
+							<outputDirectory>target/cucumber-report/cucumber-html-reports</outputDirectory>
+							<cucumberOutput>target/cucumber-report/cucumber.json</cucumberOutput>
+							<enableFlashCharts>false</enableFlashCharts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+		<resources>
+			<resource>
+				<filtering>true</filtering>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+
+	</build>
+
+
+	<!-- All the test dependencies should be declared in this section -->
+
+	<dependencies>
+		<!-- Cucumber -->
+		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-surefire-plugin -->
+		<dependency>
+			<groupId>info.cukes</groupId>
+			<artifactId>cucumber-jvm-deps</artifactId>
+			<scope>test</scope>
+			<version>${cucumber-jvm-deps}</version>
+		</dependency>
+		<dependency>
+			<groupId>info.cukes</groupId>
+			<artifactId>cucumber-picocontainer</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>info.cukes</groupId>
+			<artifactId>cucumber-testng</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>info.cukes</groupId>
+			<artifactId>cucumber-junit</artifactId>
+			<version>1.2.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.picocontainer</groupId>
+			<artifactId>picocontainer</artifactId>
+			<version>${picocontainer}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Cucumber -->
+		<!--Selenium Webdriver -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-chrome-driver</artifactId>
+			<version>${selenium.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-firefox-driver</artifactId>
+			<version>${selenium.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-server</artifactId>
+			<version>${selenium.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.testautomationguru.ocular</groupId>
+			<artifactId>ocular</artifactId>
+			<version>1.0.0.Alpha</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.arquillian.graphene</groupId>
+			<artifactId>arquillian-browser-screenshooter</artifactId>
+			<version>2.2.1</version>
+		</dependency>
+
+		<!--PhantomJsDriver Custom to support latest Webdriver -->
+		<dependency>
+			<groupId>com.codeborne</groupId>
+			<artifactId>phantomjsdriver</artifactId>
+			<version>${phantomjs.version}</version>
+		</dependency>
+
+		<dependency>
+
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>${testng}</version>
+		</dependency>
+		<!--Selenium Webdriver -->
+
+		<!-- Api Level Testing -->
+		<dependency>
+			<groupId>com.jayway.restassured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<version>${rest-assured}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<version>3.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20180813</version>
+		</dependency>
+
+
+		<!-- Api Level Testing -->
+
+		<!--Commons-IO contains utility classes, stream implementations, file filter, -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commons-io}</version>
+		</dependency>
+		<!--Commons-IO contains utility classes, stream implementations, file filter, -->
+
+		<!--Commons-lang3 a package of Java utility classes -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>${commons-lang}</version>
+		</dependency>
+		<!--Commons-lang3 a package of Java utility classes -->
+
+		<!-- Date Time support -->
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>${joda-time}</version>
+		</dependency>
+		<!-- Date Time support -->
+
+		<!--Logger -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4jVersion}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>${slf4jVersion}</version>
+		</dependency>
+
+		<!-- lombok for Getter Setters -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok}</version>
+			<scope>provided</scope>
+		</dependency>
+		<!--lombok -->
+
+		<!-- matchers -->
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-all</artifactId>
+			<version>${hamcrest-all}</version>
+		</dependency>
+		<!-- matchers -->
+
+		<!-- matchers -->
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>${assertj-assert}</version>
+		</dependency>
+		<!-- matchers -->
+
+		<!-- appium -->
+		<dependency>
+			<groupId>io.appium</groupId>
+			<artifactId>java-client</artifactId>
+			<version>${appium-java-client}</version>
+		</dependency>
+		<!-- appium -->
+
+		<!-- database connectivity -->
+		<dependency>
+			<groupId>commons-dbutils</groupId>
+			<artifactId>commons-dbutils</artifactId>
+			<version>${common-db-utils}</version>
+		</dependency>
+		<!-- database connectivity -->
+
+		<!--mysql database driver -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>${mysql}</version>
+		</dependency>
+		<!--mysql database driver -->
+
+		<!--&lt;!&ndash;oracle database dependency&ndash;&gt; -->
+		<!--<dependency> -->
+		<!--<groupId>com.oracle</groupId> -->
+		<!--<artifactId>ojdbc14</artifactId> -->
+		<!--<version>${oracle.version}</version> -->
+		<!--</dependency> -->
+		<!--oracle database dependency -->
+
+		<!--&lt;!&ndash;DB2 database dependency&ndash;&gt; -->
+		<!--<dependency> -->
+		<!--<groupId>com.ibm.db2.jcc</groupId> -->
+		<!--<artifactId>db2jcc</artifactId> -->
+		<!--<version>${db2.version}</version> -->
+		<!--</dependency> -->
+
+		<!--&lt;!&ndash; https://mvnrepository.com/artifact/com.ibm.db2.jcc/db2jcc4 
+			&ndash;&gt; -->
+		<!--<dependency> -->
+		<!--<groupId>com.ibm.db2.jcc</groupId> -->
+		<!--<artifactId>db2jcc4</artifactId> -->
+		<!--<version>10.1</version> -->
+		<!--</dependency> -->
+
+
+		<!--<dependency> -->
+		<!--<groupId>com.ibm.db2.jcc</groupId> -->
+		<!--<artifactId>db2jcc_license_cu</artifactId> -->
+		<!--<version>${db2.version}</version> -->
+		<!--</dependency> -->
+		<!--&lt;!&ndash;DB2 database dependency&ndash;&gt; -->
+		<dependency>
+			<groupId>com.aventstack</groupId>
+			<artifactId>extentreports</artifactId>
+			<version>3.0.7</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.sitture</groupId>
+			<artifactId>cucumber-jvm-extentreport</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vimalselvam</groupId>
+			<artifactId>cucumber-extentsreport</artifactId>
+			<version>2.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freemarker</groupId>
+			<artifactId>freemarker</artifactId>
+			<version>2.3.23</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>3.17</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.11.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.5.0-b01</version>
+		</dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.2</version>
+            <scope>test</scope>
+        </dependency>
+		<dependency>
+			<groupId>info.cukes</groupId>
+			<artifactId>gherkin</artifactId>
+			<version>2.12.2</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>
